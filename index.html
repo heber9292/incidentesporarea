@@ -1,0 +1,101 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Buscador de Incidentes por Área</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px 40px;
+      margin: 0;
+      max-width: none;
+      background: #f9f9f9;
+    }
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 10px;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      font-size: 1rem;
+      border: 1px solid #aaa;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    h3 {
+      margin-top: 2rem;
+      margin-bottom: 0.5rem;
+    }
+    ul {
+      margin-top: 0;
+      padding-left: 1.2rem;
+    }
+    footer {
+      text-align: left;
+      padding: 1em 0;
+      font-size: 14px;
+      color: gray;
+    }
+  </style>
+</head>
+<body>
+  <h1>Buscador de Incidentes por Área</h1>
+  <input id="buscador" placeholder="Buscar..." />
+  <div id="sugerencia-area" style="margin-bottom: 1em; color: #333;"></div>
+  <div id="resultados"></div>
+  <footer>Heber Campaña - Año 2025</footer>
+  <script>
+    const normalizar = t => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+    function sugerirArea(valor) {
+      const claves = {
+        "luz": "Alumbrado Público", "poste": "Alumbrado Público", "cable": "Alumbrado Público",
+        "basura": "Higiene Urbana", "recoleccion": "Higiene Urbana", "arbol": "Arbolado",
+        "forestal": "Arbolado", "rama": "Arbolado", "pozo": "Calles y Veredas",
+        "vereda": "Calles y Veredas", "animal": "Salud Animal", "pila": "Ambiente y Desarrollo Sostenible",
+        "residuos": "Ambiente y Desarrollo Sostenible", "plaza": "Espacios Verdes",
+        "juego": "Espacios Verdes", "contaminacion": "Ambiente y Desarrollo Sostenible",
+        "semaforo": "Tránsito", "auto": "Tránsito"
+      };
+      for (const clave in claves) {
+        if (valor.includes(clave)) return claves[clave];
+      }
+      return null;
+    }
+
+    fetch("datos.json")
+      .then(res => res.ok ? res.json() : Promise.reject("No se pudo cargar datos.json"))
+      .then(base => {
+        const buscador = document.getElementById("buscador");
+        const resultados = document.getElementById("resultados");
+        const sugerenciaEl = document.getElementById("sugerencia-area");
+
+        function mostrarResultados(filtro = "") {
+          let html = "";
+          for (const area in base) {
+            const coincidencias = base[area].filter(i =>
+              normalizar(i).includes(filtro) || normalizar(area).includes(filtro)
+            );
+            if (coincidencias.length > 0) {
+              html += `<h3>${area}</h3><ul>` + coincidencias.map(i => `<li>${i}</li>`).join("") + "</ul>";
+            }
+          }
+          let sugerencia = sugerirArea(filtro);
+          sugerenciaEl.innerHTML = sugerencia ? `<strong>¿Quiso decir el área?:</strong> ${sugerencia}` : "";
+          resultados.innerHTML = html || "<p>No se encontraron coincidencias.</p>";
+        }
+
+        buscador.addEventListener("input", function () {
+          mostrarResultados(normalizar(this.value));
+        });
+
+        mostrarResultados(""); // mostrar todo al cargar
+      })
+      .catch(err => {
+        document.getElementById("resultados").innerHTML = `<p style="color:red;">Error al cargar los datos: ${err}</p>`;
+      });
+  </script>
+</body>
+</html>
